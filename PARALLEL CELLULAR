@@ -1,0 +1,37 @@
+import random
+import time
+
+# --- Road setup ---
+road_length = 20        # number of cells
+num_cars = 6            # total cars
+steps = 10              # total simulation steps
+
+# Initialize road: 0 = empty, 1 = car
+road = [0] * road_length
+car_positions = random.sample(range(road_length), num_cars)
+for pos in car_positions:
+    road[pos] = 1
+
+# --- Function to display road ---
+def show_road(road):
+    print("".join(['🚗' if x == 1 else '.' for x in road]))
+
+# --- Parallel Cellular Automaton Rules ---
+def update_road(road):
+    new_road = [0] * road_length
+    for i in range(road_length):
+        if road[i] == 1:
+            next_pos = (i + 1) % road_length  # circular road
+            if road[next_pos] == 0:  # move forward if next cell is empty
+                new_road[next_pos] = 1
+            else:
+                new_road[i] = 1  # stay in place if blocked
+    return new_road
+
+# --- Simulation Loop ---
+print("🚦 Traffic Flow Simulation using Parallel Cellular Automaton 🚦\n")
+for step in range(steps):
+    print(f"Step {step + 1}: ", end="")
+    show_road(road)
+    road = update_road(road)
+    time.sleep(0.5)
