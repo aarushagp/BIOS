@@ -1,0 +1,71 @@
+import random
+
+# --- Graph (Traffic Network) ---
+# Each node represents a junction, each edge represents a road with travel time
+graph = {
+    'A': {'B': 2, 'C': 3},
+    'B': {'A': 2, 'C': 1, 'D': 4},
+    'C': {'A': 3, 'B': 1, 'D': 2},
+    'D': {'B': 4, 'C': 2}
+}
+
+pheromone = { (i, j): 1 for i in graph for j in graph[i] }  # initial pheromone
+num_ants = 5
+num_iterations = 10
+decay = 0.5
+alpha = 1  # importance of pheromone
+beta = 2   # importance of distance
+
+# --- Function to calculate path length ---
+def path_length(path):
+    total = 0
+    for i in range(len(path)-1):
+        total += graph[path[i]][path[i+1]]
+    return total
+
+# --- ACO main loop ---
+best_path = None
+best_length = float('inf')
+
+for iteration in range(num_iterations):
+    all_paths = []
+    for ant in range(num_ants):
+        path = ['A']  # start from junction A
+        visited = set(path)
+        while path[-1] != 'D':  # goal is junction D
+            current = path[-1]
+            choices = [node for node in graph[current] if node not in visited]
+            if not choices:
+                break
+            # Probability selection based on pheromone and distance
+            probs = []
+            for next_node in choices:
+                tau = pheromone[(current, next_node)] ** alpha
+                eta = (1 / graph[current][next_node]) ** beta
+                probs.append(tau * eta)
+            total = sum(probs)
+            probs = [p / total for p in probs]
+            next_node = random.choices(choices, weights=probs)[0]
+            path.append(next_node)
+            visited.add(next_node)
+        if path[-1] == 'D':
+            all_paths.append((path, path_length(path)))
+    
+    # Update pheromone
+    for key in pheromone:
+        pheromone[key] *= (1 - decay)
+    for path, dist in all_paths:
+        for i in range(len(path)-1):
+            pheromone[(path[i], path[i+1])] += 1 / dist
+
+    # Update best path
+    for path, dist in all_paths:
+        if dist < best_length:
+            best_path, best_length = path, dist
+
+    print(f"Iteration {iteration+1}: Best path so far = {best_path}, Distance = {best_length}")
+
+# --- Final Output ---
+print("\n🏁 Optimal Route Found:")
+print(" → ".join(best_path))
+print("Total Travel Time:", best_length)
