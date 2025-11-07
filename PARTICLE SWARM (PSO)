@@ -1,0 +1,52 @@
+import random
+
+# --- Problem setup ---
+num_jobs = 5        # number of jobs
+num_machines = 3    # number of machines
+jobs = [2, 4, 6, 8, 3]  # time required for each job
+
+# --- PSO parameters ---
+num_particles = 5
+max_iter = 20
+w = 0.5      # inertia
+c1 = 1       # cognitive coefficient
+c2 = 2       # social coefficient
+
+# --- Helper: Calculate fitness (makespan = total machine time) ---
+def fitness(position):
+    machine_times = [0] * num_machines
+    for j, m in enumerate(position):
+        machine_times[m] += jobs[j]
+    return max(machine_times)  # we want to minimize this
+
+# --- Initialize particles ---
+particles = [ [random.randint(0, num_machines - 1) for _ in range(num_jobs)] for _ in range(num_particles) ]
+velocities = [ [0]*num_jobs for _ in range(num_particles) ]
+pbest = particles[:]
+pbest_scores = [fitness(p) for p in particles]
+gbest = pbest[pbest_scores.index(min(pbest_scores))]
+
+# --- PSO main loop ---
+for _ in range(max_iter):
+    for i in range(num_particles):
+        for j in range(num_jobs):
+            # Update velocity and position
+            r1, r2 = random.random(), random.random()
+            velocities[i][j] = (w * velocities[i][j] +
+                                c1 * r1 * (pbest[i][j] - particles[i][j]) +
+                                c2 * r2 * (gbest[j] - particles[i][j]))
+            # Update position (discretized)
+            if random.random() < 1 / (1 + abs(velocities[i][j])):
+                particles[i][j] = random.randint(0, num_machines - 1)
+        
+        # Evaluate fitness
+        score = fitness(particles[i])
+        if score < pbest_scores[i]:
+            pbest[i], pbest_scores[i] = particles[i][:], score
+    
+    # Update global best
+    gbest = pbest[pbest_scores.index(min(pbest_scores))]
+
+# --- Output ---
+print("Best job assignment:", gbest)
+print("Minimum makespan:", fitness(gbest))
