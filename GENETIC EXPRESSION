@@ -1,0 +1,135 @@
+import random
+
+# -----------------------------
+# 1. Define the Problem
+# -----------------------------
+# Example items
+values = [10, 40, 30, 50]   # values of the 4 items
+weights = [5, 4, 6, 3]      # weights of the 4 items
+capacity = 10               # maximum knapsack weight
+num_items = len(values)
+
+# -----------------------------
+# 2. Initialize Parameters
+# -----------------------------
+POP_SIZE = 10        # population size
+GENERATIONS = 30     # number of generations
+CROSSOVER_RATE = 0.8
+MUTATION_RATE = 0.1
+
+# -----------------------------
+# 3. Initialize Population
+# -----------------------------
+def create_chromosome():
+    """Generate a random binary chromosome."""
+    return [random.randint(0, 1) for _ in range(num_items)]
+
+def initialize_population():
+    """Create an initial population."""
+    return [create_chromosome() for _ in range(POP_SIZE)]
+
+# -----------------------------
+# 4. Evaluate Fitness
+# -----------------------------
+def fitness(chromosome):
+    total_value = 0
+    total_weight = 0
+    for gene, v, w in zip(chromosome, values, weights):
+        if gene == 1:
+            total_value += v
+            total_weight += w
+    if total_weight > capacity:
+        return 0  # penalty for exceeding capacity
+    return total_value
+
+# -----------------------------
+# 5. Selection
+# -----------------------------
+def selection(population):
+    """Tournament selection."""
+    tournament_size = 3
+    selected = random.sample(population, tournament_size)
+    selected = sorted(selected, key=fitness, reverse=True)
+    return selected[0]
+
+# -----------------------------
+# 6. Crossover
+# -----------------------------
+def crossover(parent1, parent2):
+    if random.random() < CROSSOVER_RATE:
+        point = random.randint(1, num_items - 1)
+        child1 = parent1[:point] + parent2[point:]
+        child2 = parent2[:point] + parent1[point:]
+        return child1, child2
+    return parent1[:], parent2[:]
+
+# -----------------------------
+# 7. Mutation
+# -----------------------------
+def mutate(chromosome):
+    for i in range(len(chromosome)):
+        if random.random() < MUTATION_RATE:
+            chromosome[i] = 1 - chromosome[i]  # flip bit
+    return chromosome
+
+# -----------------------------
+# 8. Gene Expression (Phenotype Mapping)
+# -----------------------------
+def decode(chromosome):
+    """Translate chromosome into selected items, total value, and total weight."""
+    chosen_items = []
+    total_value = 0
+    total_weight = 0
+    for i, gene in enumerate(chromosome):
+        if gene == 1:
+            chosen_items.append(i + 1)
+            total_value += values[i]
+            total_weight += weights[i]
+    return chosen_items, total_value, total_weight
+
+# -----------------------------
+# 9. Iterate Through Generations
+# -----------------------------
+def gene_expression_algorithm():
+    population = initialize_population()
+    best_solution = None
+    best_fitness = 0
+
+    for generation in range(GENERATIONS):
+        new_population = []
+
+        # Evaluate all chromosomes
+        population = sorted(population, key=fitness, reverse=True)
+        if fitness(population[0]) > best_fitness:
+            best_solution = population[0]
+            best_fitness = fitness(population[0])
+
+        # Print progress
+        print(f"Generation {generation+1}: Best Fitness = {best_fitness}")
+
+        # Elitism: carry the best two
+        new_population.extend(population[:2])
+
+        # Create new population
+        while len(new_population) < POP_SIZE:
+            parent1 = selection(population)
+            parent2 = selection(population)
+            child1, child2 = crossover(parent1, parent2)
+            new_population.append(mutate(child1))
+            if len(new_population) < POP_SIZE:
+                new_population.append(mutate(child2))
+
+        population = new_population
+
+    return best_solution, best_fitness
+
+# -----------------------------
+# 10. Output Best Solution
+# -----------------------------
+best_chromosome, best_value = gene_expression_algorithm()
+items, total_val, total_wt = decode(best_chromosome)
+
+print("\nBest Chromosome:", best_chromosome)
+print("Selected Items:", items)
+print("Total Value:", total_val)
+print("Total Weight:", total_wt)
