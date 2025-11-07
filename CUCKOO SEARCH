@@ -1,0 +1,71 @@
+import random
+import math
+
+# --- Environment Setup (2D Grid with Obstacles) ---
+grid_size = 10
+obstacles = [(3, 3), (3, 4), (4, 4), (5, 5)]  # obstacles
+start = (0, 0)
+goal = (9, 9)
+
+# --- Cuckoo Search Parameters ---
+num_nests = 10
+max_iter = 20
+pa = 0.25  # probability of abandoning poor nests
+
+# --- Helper: Fitness Function (Path Length + Obstacle Penalty) ---
+def fitness(path):
+    total = 0
+    for i in range(len(path)-1):
+        total += math.dist(path[i], path[i+1])
+    # Add penalty if path passes through obstacles
+    for p in path:
+        if p in obstacles:
+            total += 50
+    return total
+
+# --- Generate Random Path ---
+def random_path():
+    path = [start]
+    for _ in range(5):  # intermediate random waypoints
+        path.append((random.randint(0, grid_size-1), random.randint(0, grid_size-1)))
+    path.append(goal)
+    return path
+
+# --- Lévy Flight (small random change) ---
+def levy_flight(path):
+    new_path = path[:]
+    i = random.randint(1, len(path)-2)
+    new_path[i] = (random.randint(0, grid_size-1), random.randint(0, grid_size-1))
+    return new_path
+
+# --- Initialize nests (paths) ---
+nests = [random_path() for _ in range(num_nests)]
+fitness_values = [fitness(p) for p in nests]
+
+# --- Cuckoo Search Main Loop ---
+for _ in range(max_iter):
+    new_nests = []
+    for nest in nests:
+        new_path = levy_flight(nest)
+        if fitness(new_path) < fitness(nest):
+            new_nests.append(new_path)
+        else:
+            new_nests.append(nest)
+
+    # Abandon a fraction of worst nests
+    num_abandon = int(pa * num_nests)
+    worst_indices = sorted(range(len(new_nests)), key=lambda i: fitness(new_nests[i]), reverse=True)[:num_abandon]
+    for i in worst_indices:
+        new_nests[i] = random_path()
+
+    nests = new_nests
+    fitness_values = [fitness(p) for p in nests]
+
+# --- Best Path ---
+best_path = nests[fitness_values.index(min(fitness_values))]
+best_distance = min(fitness_values)
+
+# --- Output ---
+print("🏁 Best Path Found:")
+print(best_path)
+print("Total Path Cost:", round(best_distance, 2))
